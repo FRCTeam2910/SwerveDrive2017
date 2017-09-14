@@ -1,0 +1,9 @@
+# Build output folders
+bin/
+build/
+dist/
+
+# Intellij folders and files
+.idea/
+out/
+*.iml
