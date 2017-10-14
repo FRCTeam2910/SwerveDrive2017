@@ -1,33 +1,33 @@
 package org.usfirst.frc.team2910.robot.subsystems;
 
-import edu.wpi.first.wpilibj.PIDController;
-import edu.wpi.first.wpilibj.SpeedController;
+import com.ctre.CANTalon;
 import edu.wpi.first.wpilibj.command.Subsystem;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.usfirst.frc.team2910.robot.commands.SwerveModuleCommand;
-import org.usfirst.frc.team2910.robot.sensors.AnalogEncoder;
 
 public class SwerveDriveModule extends Subsystem {
-	private static final double DEFAULT_P = 3, DEFAULT_I = 0.1, DEFAULT_D = 3;
 
-	private AnalogEncoder mAngleEncoder;
-	private SpeedController mAngleMotor;
-	private SpeedController mDriveMotor;
+	private final int mModuleNumber;
 
-	private PIDController mAnglePIDController;
-	private PIDController mSpeedPIDController;
+	private final double mZeroOffset;
 
-	public SwerveDriveModule(AnalogEncoder angleEncoder, SpeedController angleMotor, SpeedController driveMotor) {
-		mAngleEncoder = angleEncoder;
+	private final CANTalon mAngleMotor;
+	private final CANTalon mDriveMotor;
+
+	public SwerveDriveModule(int moduleNumber, CANTalon angleMotor, CANTalon driveMotor, double zeroOffset) {
+		mModuleNumber = moduleNumber;
+
 		mAngleMotor = angleMotor;
 		mDriveMotor = driveMotor;
 
-		mAnglePIDController = new PIDController(DEFAULT_P, DEFAULT_I, DEFAULT_D, angleEncoder, angleMotor);
-		mAnglePIDController.setContinuous(true);
-		mAnglePIDController.setPercentTolerance(0.02);
-		mAnglePIDController.setInputRange(0, 359.0 / 360.0);
-		mAnglePIDController.setOutputRange(-1, 1);
+		mZeroOffset = zeroOffset;
 
-		mAnglePIDController.enable();
+		angleMotor.changeControlMode(CANTalon.TalonControlMode.Position);
+		angleMotor.setFeedbackDevice(CANTalon.FeedbackDevice.AnalogEncoder);
+		angleMotor.reverseSensor(true);
+		angleMotor.setPID(20, 0, 200); // P: 20, I: 0, D: 200
+		angleMotor.set(0);
+		angleMotor.enableControl();
 	}
 
 	@Override
@@ -35,27 +35,58 @@ public class SwerveDriveModule extends Subsystem {
 		setDefaultCommand(new SwerveModuleCommand(this));
 	}
 
-	public double getAngle() {
-		return mAnglePIDController.getSetpoint() * 360;
-	}
-
-	public AnalogEncoder getAngleEncoder() {
-		return mAngleEncoder;
-	}
-
-	public SpeedController getAngleMotor() {
+	public CANTalon getAngleMotor() {
 		return mAngleMotor;
 	}
 
-	public PIDController getAnglePIDController() {
-		return mAnglePIDController;
+	public CANTalon getDriveMotor() {
+		return mDriveMotor;
 	}
 
-	public void setAngle(double angle) {
-		mAnglePIDController.setSetpoint((angle % 360) / 360);
+	public void setTargetAngle(double targetAngle) {
+		targetAngle += mZeroOffset;
+
+		targetAngle %= 360;
+
+		double currentAngle = mAngleMotor.getPosition() * (360.0 / 1024.0);
+		double currentAngleMod = currentAngle % 360;
+		if (currentAngleMod < 0) currentAngleMod += 360;
+
+
+		SmartDashboard.putNumber("Current Angle " + mModuleNumber, currentAngle);
+		SmartDashboard.putNumber("Target Angle " + mModuleNumber, targetAngle);
+
+		double delta = currentAngleMod - targetAngle;
+
+		SmartDashboard.putNumber("Delta " + mModuleNumber, delta);
+		if (delta > 180) {
+			targetAngle += 360;
+		} else if (delta < -180) {
+			targetAngle -= 360;
+		}
+
+		delta = currentAngleMod - targetAngle;
+		if (delta > 90 || delta < -90) {
+			if (delta > 90)
+				targetAngle += 180;
+	else if (delta < -90)
+				targetAngle -= 180;
+			mDriveMotor.setInverted(false);
+		} else {
+			mDriveMotor.setInverted(true);
+		}
+
+		targetAngle += currentAngle - currentAngleMod;
+
+		SmartDashboard.putNumber("Output Angle " + mModuleNumber, targetAngle);
+
+		targetAngle = targetAngle * (1024.0 / 360.0);
+
+		mAngleMotor.setSetpoint(targetAngle);
 	}
 
-	public void setAngleRelative(double deltaAngle) {
-		setAngle(getAngle() + deltaAngle);
+	public void setTargetSpeed(double speed) {
+		mDriveMotor.setSetpoint(speed);
+		SmartDashboard.putNumber("Drivetrain Speed", speed);
 	}
 }

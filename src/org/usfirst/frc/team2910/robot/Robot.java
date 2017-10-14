@@ -4,6 +4,7 @@ package org.usfirst.frc.team2910.robot;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.usfirst.frc.team2910.robot.subsystems.SwerveDriveSubsystem;
 
 /**
@@ -47,6 +48,10 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
+
+		for (int i = 0; i < 4; i++) {
+			SmartDashboard.putNumber("Current Angle " + i, swerveDriveSubsystem.getSwerveModule(i).getAngleMotor().getPosition() * (360.0 / 1024.0) % 360);
+		}
 	}
 
 	/**
