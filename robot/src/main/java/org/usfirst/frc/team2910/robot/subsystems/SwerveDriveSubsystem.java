@@ -1,6 +1,9 @@
 package org.usfirst.frc.team2910.robot.subsystems;
 
 import com.ctre.CANTalon;
+import com.kauailabs.navx.frc.AHRS;
+import edu.wpi.first.wpilibj.SPI;
+import org.usfirst.frc.team2910.robot.input.XboxGamepad;
 
 public class SwerveDriveSubsystem extends HolonomicDrivetrain {
 	private static final double WHEELBASE = 12.5;
@@ -16,13 +19,15 @@ public class SwerveDriveSubsystem extends HolonomicDrivetrain {
 	private SwerveDriveModule[] mSwerveModules = new SwerveDriveModule[] {
 		new SwerveDriveModule(0, new CANTalon(6), new CANTalon(5), 75.5),
 		new SwerveDriveModule(1, new CANTalon(3), new CANTalon(4), 13.7),
-		new SwerveDriveModule(2, new CANTalon(2), new CANTalon(1), 130),
+		new SwerveDriveModule(2, new CANTalon(2), new CANTalon(1), 254),
 		new SwerveDriveModule(3, new CANTalon(7), new CANTalon(8), 157)
 	};
 
-	private boolean mIsFieldOriented = false;
+	private AHRS mNavX = new AHRS(SPI.Port.kMXP, (byte) 200);
 
 	public SwerveDriveSubsystem() {
+		zeroGyro();
+
 		mSwerveModules[0].getDriveMotor().setInverted(true);
 		mSwerveModules[1].getDriveMotor().setInverted(true);
 		mSwerveModules[2].getDriveMotor().setInverted(true);
@@ -36,14 +41,36 @@ public class SwerveDriveSubsystem extends HolonomicDrivetrain {
 		}
 	}
 
+	public AHRS getNavX() {
+		return mNavX;
+	}
+
+	public double getGyroAngle() {
+		return (mNavX.getAngle() - getAdjustmentAngle());
+	}
+
+	public double getGyroRate() {
+		return mNavX.getRate();
+	}
+
+	public double getRawGyroAngle() {
+		return mNavX.getAngle();
+	}
+
 	public SwerveDriveModule getSwerveModule(int i) {
 		return mSwerveModules[i];
 	}
 
 	@Override
 	public void holonomicDrive(double forward, double strafe, double rotation) {
-		if (mIsFieldOriented) {
-			// TODO: Field oriented driving math.
+		forward *= getSpeedMultiplier();
+		strafe *= getSpeedMultiplier();
+		if (isFieldOriented()) {
+			double angleRad = Math.toRadians(getGyroAngle());
+			double temp = forward * Math.cos(angleRad) +
+					strafe * Math.sin(angleRad);
+			strafe = -forward * Math.sin(angleRad) + strafe * Math.cos(angleRad);
+			forward = temp;
 		}
 
 		double a = strafe - rotation * (WHEELBASE / TRACKWIDTH);
@@ -78,19 +105,11 @@ public class SwerveDriveSubsystem extends HolonomicDrivetrain {
 			    Math.abs(strafe) > 0.05 ||
 			    Math.abs(rotation) > 0.05) {
 				mSwerveModules[i].setTargetAngle(angles[i] + 180);
+			} else {
+				mSwerveModules[i].setTargetAngle(mSwerveModules[i].getTargetAngle());
 			}
 			mSwerveModules[i].setTargetSpeed(speeds[i]);
 		}
-	}
-
-	@Override
-	public boolean isFieldOriented() {
-		return mIsFieldOriented;
-	}
-
-	@Override
-	public void setFieldOriented(boolean fieldOrientedDrive) {
-		mIsFieldOriented = fieldOrientedDrive;
 	}
 
 	@Override

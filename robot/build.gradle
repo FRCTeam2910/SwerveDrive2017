@@ -1,0 +1,28 @@
+apply plugin: 'jaci.openrio.gradle.GradleRIO'
+
+apply plugin: 'java'
+
+deploy {
+    targets {
+        target('roborio', jaci.openrio.gradle.frc.RoboRIO) {
+            team = 2910
+        }
+    }
+    artifacts {
+        artifact('robotCode', jaci.openrio.gradle.frc.FRCJavaArtifact) {
+            targets << 'roborio'
+        }
+    }
+}
+
+dependencies {
+    compile wpilib()
+    compile ctre()
+    compile navx()
+}
+
+jar {
+    from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest jaci.openrio.gradle.GradleRIOPlugin.javaManifest('org.usfirst.frc.team2910.robot.Robot')
+}
+

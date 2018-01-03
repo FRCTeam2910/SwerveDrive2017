@@ -1,9 +1,16 @@
-# Build output folders
-bin/
-build/
-dist/
+# Eclipse files and folders
+.classpath
+.project
+.settings/
 
-# Intellij folders and files
+# Intellij files and folders
+*.iml
+*.ipr
+*.iws
 .idea/
 out/
-*.iml
+
+# Gradle folders
+.gradle/
+build/
+

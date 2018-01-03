@@ -1,0 +1,13 @@
+plugins {
+    id 'jaci.openrio.gradle.GradleRIO' version '2017.10.30' apply false
+    id 'jaci.gradle.EmbeddedTools' version '2017.10.30' apply false
+}
+
+allprojects {
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.2.1'
+}

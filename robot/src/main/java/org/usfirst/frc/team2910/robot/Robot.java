@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import org.usfirst.frc.team2910.robot.subsystems.SwerveDriveModule;
 import org.usfirst.frc.team2910.robot.subsystems.SwerveDriveSubsystem;
 
 /**
@@ -30,9 +31,25 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void robotInit() {
-		mOI = new OI();
+		mOI = new OI(this);
 
 		swerveDriveSubsystem = new SwerveDriveSubsystem();
+
+		mOI.registerControls();
+	}
+
+	@Override
+	public void robotPeriodic() {
+		SmartDashboard.putNumber("Adjusted Drivetrain Angle", swerveDriveSubsystem.getGyroAngle());
+		SmartDashboard.putNumber("Raw Drivetrain Angle", swerveDriveSubsystem.getRawGyroAngle());
+		SmartDashboard.putNumber("Drivetrain Rate", swerveDriveSubsystem.getGyroRate());
+		SmartDashboard.putNumber("Gyro Update Rate", swerveDriveSubsystem.getNavX().getActualUpdateRate());
+
+
+		for (int i = 0; i < 4; i++) {
+			SmartDashboard.putNumber("Drive Current Draw " + i, swerveDriveSubsystem.getSwerveModule(i).getDriveMotor().getOutputCurrent());
+			SmartDashboard.putNumber("Angle Current Draw " + i, swerveDriveSubsystem.getSwerveModule(i).getAngleMotor().getOutputCurrent());
+		}
 	}
 
 	/**
@@ -42,16 +59,14 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override
 	public void disabledInit() {
-
+		for (int i = 0; i < 4; i++) {
+			swerveDriveSubsystem.getSwerveModule(i).robotDisabledInit();
+		}
 	}
 
 	@Override
 	public void disabledPeriodic() {
 		Scheduler.getInstance().run();
-
-		for (int i = 0; i < 4; i++) {
-			SmartDashboard.putNumber("Current Angle " + i, swerveDriveSubsystem.getSwerveModule(i).getAngleMotor().getPosition() * (360.0 / 1024.0) % 360);
-		}
 	}
 
 	/**
@@ -60,7 +75,7 @@ public class Robot extends IterativeRobot {
 	 * chooser code works with the Java SmartDashboard. If you prefer the
 	 * LabVIEW Dashboard, remove all of the chooser code and uncomment the
 	 * getString code to get the auto name from the text box below the Gyro
-	 *
+	 * <p>
 	 * You can add additional auto modes by adding additional commands to the
 	 * chooser code above (like the commented example) or additional comparisons
 	 * to the switch structure below with additional strings & commands.
@@ -96,5 +111,9 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void testPeriodic() {
 		LiveWindow.run();
+	}
+
+	public SwerveDriveSubsystem getDrivetrain() {
+		return swerveDriveSubsystem;
 	}
 }
